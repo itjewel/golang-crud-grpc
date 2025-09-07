@@ -1,61 +1,63 @@
-syntax = "proto3";      // একবারই লিখবে
+package server
 
-package user;            // package name
+import (
+	"context"
+	"golang-crud/models"
+	"golang-crud/repository"
+	pb "path/to/generated/user"
+)
 
-option go_package = "golang-crud/proto/userpb"; // Go module + proto folder
-
-// Service definition
-service UserService {
-  rpc AddUser (AddUserRequest) returns (UserResponse);
-  rpc GetAllUsers (Empty) returns (UsersResponse);
-  rpc GetUserById (GetUserRequest) returns (UserResponse);
-  rpc UpdateUser (UpdateUserRequest) returns (UserResponse);
-  rpc DeleteUser (DeleteUserRequest) returns (DeleteUserResponse);
-  rpc TextSearch (TextSearchRequest) returns (UsersResponse);
+type UserGRPCServer struct {
+    pb.UnimplementedUserServiceServer
+    repo *repository.UserRepository
 }
 
-// Request / Response messages
-message AddUserRequest {
-  string name = 1;
-  string email = 2;
-  string password = 3;
-  string address = 4;
+func (s *UserGRPCServer) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.CreateUserResponse, error) {
+    user := models.Users{
+        Name: req.Name,
+        Email: req.Email,
+        Password: req.Password,
+        Address: req.Address,
+    }
+    id, err := s.repo.Insert(user)
+    if err != nil {
+        return nil, err
+    }
+    return &pb.CreateUserResponse{Id: id}, nil
 }
 
-message GetUserRequest {
-  int32 id = 1;
+func (s *UserGRPCServer) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.GetUserResponse, error) {
+    user, err := s.repo.GetOneUser(int(req.Id))
+    if err != nil {
+        return nil, err
+    }
+    return &pb.GetUserResponse{
+        User: &pb.User{
+            Id: user.Id,
+            Name: user.Name,
+            Email: user.Email,
+            Password: user.Password,
+            Address: user.Address,
+        },
+    }, nil
 }
 
-message UpdateUserRequest {
-  int32 id = 1;
-  string name = 2;
-  string email = 3;
-  string password = 4;
-  string address = 5;
+func (s *UserGRPCServer) GetAllUsers(ctx context.Context, req *pb.Empty) (*pb.GetAllUsersResponse, error) {
+    users, err := s.repo.GetAll()
+    if err != nil {
+        return nil, err
+    }
+    var respUsers []*pb.User
+    for _, u := range users {
+        respUsers = append(respUsers, &pb.User{
+            Id: u.Id,
+            Name: u.Name,
+            Email: u.Email,
+            Password: u.Password,
+            Address: u.Address,
+        })
+    }
+    return &pb.GetAllUsersResponse{Users: respUsers}, nil
 }
 
-message DeleteUserRequest {
-  int32 id = 1;
-}
-
-message TextSearchRequest {
-  string query = 1;
-}
-
-message UserResponse {
-  int32 id = 1;
-  string name = 2;
-  string email = 3;
-  string password = 4;
-  string address = 5;
-}
-
-message UsersResponse {
-  repeated UserResponse users = 1;
-}
-
-message DeleteUserResponse {
-  bool success = 1;
-}
-
-message Empty {}
+// UpdateUser এবং DeleteUser একইভাবে implement করতে হবে
