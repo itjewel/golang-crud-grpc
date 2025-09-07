@@ -1,34 +1,48 @@
 package main
 
 import (
-	"fmt"
 	"log"
+	"net"
 	"net/http"
 
 	"golang-crud/database"
+	"golang-crud/grpc"
 	"golang-crud/routes"
 
-	"github.com/joho/godotenv"
+	pb "golang-crud/proto/userpb"
+
+	"google.golang.org/grpc"
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Println("Warning: .env file not loaded, using system environment variables")
-	}
+    // DB connection
+    database.Connect()
+    defer database.DB.Close()
 
-	database.Connect() // DB connect
-	defer database.DB.Close()
+    // HTTP server
+    mux := http.NewServeMux()
+    routes.CategoryRoutes(mux)
+    routes.ProductRoutes(mux)
+    routes.UserRoutes(mux)
 
-	mux := http.NewServeMux()
-	// mux := http.NewServeMux()
-	routes.CategoryRoutes(mux)
-	routes.ProductRoutes(mux)
-	routes.UserRoutes(mux)
+    go func() {
+        log.Println("HTTP Server running at :8000")
+        if err := http.ListenAndServe(":8000", mux); err != nil {
+            log.Fatal(err)
+        }
+    }()
 
-	fmt.Println("Server running at http://localhost:8000")
-	err = http.ListenAndServe(":8000", mux)
-	if err != nil {
-		log.Fatal("Server failed:", err)
-	}
+    // gRPC server
+    lis, err := net.Listen("tcp", ":50051")
+    if err != nil {
+        log.Fatalf("failed to listen: %v", err)
+    }
+
+    grpcServer := grpc.NewServer() // <-- use grpc.NewServer
+    pb.RegisterUserServiceServer(grpcServer, &YourUserServer{}) // replace with your server struct
+
+    log.Println("gRPC Server running at :50051")
+    if err := grpcServer.Serve(lis); err != nil {
+        log.Fatalf("failed to serve gRPC: %v", err)
+    }
 }
