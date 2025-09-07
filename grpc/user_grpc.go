@@ -1,9 +1,10 @@
-syntax = "proto3";
+syntax = "proto3";      // একবারই লিখবে
 
-package user;
+package user;            // package name
 
-option go_package = "golang-crud/proto/userpb";
+option go_package = "golang-crud/proto/userpb"; // Go module + proto folder
 
+// Service definition
 service UserService {
   rpc AddUser (AddUserRequest) returns (UserResponse);
   rpc GetAllUsers (Empty) returns (UsersResponse);
@@ -13,6 +14,7 @@ service UserService {
   rpc TextSearch (TextSearchRequest) returns (UsersResponse);
 }
 
+// Request / Response messages
 message AddUserRequest {
   string name = 1;
   string email = 2;
@@ -20,7 +22,9 @@ message AddUserRequest {
   string address = 4;
 }
 
-message GetUserRequest { int32 id = 1; }
+message GetUserRequest {
+  int32 id = 1;
+}
 
 message UpdateUserRequest {
   int32 id = 1;
@@ -30,9 +34,13 @@ message UpdateUserRequest {
   string address = 5;
 }
 
-message DeleteUserRequest { int32 id = 1; }
+message DeleteUserRequest {
+  int32 id = 1;
+}
 
-message TextSearchRequest { string query = 1; }
+message TextSearchRequest {
+  string query = 1;
+}
 
 message UserResponse {
   int32 id = 1;
@@ -42,8 +50,12 @@ message UserResponse {
   string address = 5;
 }
 
-message UsersResponse { repeated UserResponse users = 1; }
+message UsersResponse {
+  repeated UserResponse users = 1;
+}
 
-message DeleteUserResponse { bool success = 1; }
+message DeleteUserResponse {
+  bool success = 1;
+}
 
 message Empty {}
